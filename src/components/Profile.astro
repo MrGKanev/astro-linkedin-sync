@@ -1,0 +1,102 @@
+---
+import { getEntry } from "astro:content";
+import type { Profile } from "../types.js";
+
+/**
+ * Renders the synced LinkedIn profile (name, headline, location, summary,
+ * websites). All sections are individually slot-overridable.
+ *
+ * @example Auto-fetch from default collection
+ *   <Profile />
+ *
+ * @example Pass data explicitly
+ *   ---
+ *   import { getEntry } from "astro:content";
+ *   const profile = (await getEntry("linkedin", "profile"))!.data;
+ *   ---
+ *   <Profile data={profile} />
+ *
+ * @example Slot override
+ *   <Profile>
+ *     <h1 slot="header">Custom name layout</h1>
+ *   </Profile>
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  data?: Profile;
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "profile",
+  data,
+  class: className,
+} = Astro.props;
+
+let profile: Profile;
+if (data) {
+  profile = data;
+} else {
+  const e = await getEntry(collection as never, entry);
+  if (!e) {
+    throw new Error(
+      `astro-linkedin-sync <Profile>: entry "${entry}" not found in collection "${collection}". Did you run \`astro-linkedin-sync sync\`?`,
+    );
+  }
+  profile = (e as { data: Profile }).data;
+}
+
+const summaryParas = profile.summary
+  ? profile.summary.split(/\n{2,}/).map((p) => p.trim()).filter(Boolean)
+  : [];
+---
+
+<section class:list={["als-profile", className]}>
+  <slot name="header">
+    <header class="als-profile__header">
+      <h1 class="als-profile__name">
+        {profile.firstName} {profile.lastName}
+      </h1>
+      {
+        profile.headline && (
+          <p class="als-profile__headline">{profile.headline}</p>
+        )
+      }
+      {
+        profile.location && (
+          <p class="als-profile__location">{profile.location}</p>
+        )
+      }
+    </header>
+  </slot>
+
+  {
+    summaryParas.length > 0 && (
+      <slot name="summary">
+        <div class="als-profile__summary">
+          {summaryParas.map((p) => (
+            <p>{p}</p>
+          ))}
+        </div>
+      </slot>
+    )
+  }
+
+  {
+    profile.websites.length > 0 && (
+      <slot name="websites">
+        <ul class="als-profile__websites">
+          {profile.websites.map((url) => (
+            <li>
+              <a href={url} rel="me noopener" target="_blank">
+                {url}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </slot>
+    )
+  }
+</section>

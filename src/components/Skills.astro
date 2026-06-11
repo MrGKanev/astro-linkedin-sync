@@ -1,0 +1,50 @@
+---
+import { getEntry } from "astro:content";
+import type { Skill } from "../types.js";
+
+/**
+ * Renders skills as a tag cloud. Auto-fetches from `linkedin/skills`.
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  skills?: Skill[];
+  /** Cap the number of rendered skills. */
+  limit?: number;
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "skills",
+  skills: provided,
+  limit,
+  class: className,
+} = Astro.props;
+
+let skills: Skill[];
+if (provided) {
+  skills = provided;
+} else {
+  const e = await getEntry(collection as never, entry);
+  skills = e ? ((e as { data: { items: Skill[] } }).data.items ?? []) : [];
+}
+if (limit && limit > 0) skills = skills.slice(0, limit);
+---
+
+<section class:list={["als-skills", className]}>
+  <slot name="heading">
+    <h2 class="als-skills__heading">Skills</h2>
+  </slot>
+  <ul class="als-skills__list">
+    {
+      skills.map((s) => (
+        <li class="als-skills__item">
+          <slot name="skill" skill={s}>
+            <span class="als-skills__tag">{s.name}</span>
+          </slot>
+        </li>
+      ))
+    }
+  </ul>
+</section>

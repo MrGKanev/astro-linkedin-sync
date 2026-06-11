@@ -1,0 +1,65 @@
+---
+import { getEntry } from "astro:content";
+import type { Certification } from "../types.js";
+
+/**
+ * Renders certifications. Auto-fetches from `linkedin/certifications`.
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  certifications?: Certification[];
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "certifications",
+  certifications: provided,
+  class: className,
+} = Astro.props;
+
+let certifications: Certification[];
+if (provided) {
+  certifications = provided;
+} else {
+  const e = await getEntry(collection as never, entry);
+  certifications = e
+    ? ((e as { data: { items: Certification[] } }).data.items ?? [])
+    : [];
+}
+---
+
+<section class:list={["als-certifications", className]}>
+  <slot name="heading">
+    <h2 class="als-certifications__heading">Certifications</h2>
+  </slot>
+
+  <ul class="als-certifications__list">
+    {
+      certifications.map((c) => (
+        <li class="als-certifications__item">
+          <p class="als-certifications__name">
+            {c.url ? <a href={c.url} target="_blank" rel="noopener">{c.name}</a> : c.name}
+          </p>
+          {c.authority && (
+            <p class="als-certifications__authority">{c.authority}</p>
+          )}
+          {(c.startedOn || c.finishedOn) && (
+            <p class="als-certifications__dates">
+              <time>
+                {c.startedOn ?? ""}
+                {c.finishedOn ? ` – ${c.finishedOn}` : ""}
+              </time>
+            </p>
+          )}
+          {c.licenseNumber && (
+            <p class="als-certifications__license">
+              License: {c.licenseNumber}
+            </p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+</section>

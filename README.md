@@ -1,12 +1,52 @@
 # astro-linkedin-sync
 
-Sync your LinkedIn profile into Astro content collections so you stop maintaining your CV in two places.
+Sync your LinkedIn profile into Astro and render it with drop-in components. Stop maintaining your CV in two places.
 
-**One-way:** LinkedIn → Astro. LinkedIn stays the source of truth; your Astro site gets rebuilt from the exported data.
+**One-way:** LinkedIn → Astro. LinkedIn stays the source of truth; your Astro site rebuilds from the exported data.
+
+## What's in the box
+
+1. **Astro integration** — auto-runs the sync when you start `astro dev` / `astro build`.
+2. **CLI** — `astro-linkedin-sync sync ./export.zip` for manual or CI runs.
+3. **Pre-built Astro components** — `<Profile />`, `<Experience />`, `<Skills />`, `<Posts />`, etc.
+4. **Zod schemas** — for typed access via `getEntry()` / `getCollection()`.
+5. **Smart re-sync** — manual edits are detected and preserved; `locked: true` opts a file out forever.
+
+## Quick start
+
+```bash
+npm install astro-linkedin-sync
+npx astro-linkedin-sync init
+```
+
+Add the integration to `astro.config.mjs`:
+
+```js
+import { defineConfig } from "astro/config";
+import linkedinSync from "astro-linkedin-sync/integration";
+
+export default defineConfig({
+  integrations: [linkedinSync()],
+});
+```
+
+Drop your LinkedIn data export ZIP into `./exports/`, then:
+
+```bash
+npm run dev
+# linkedin-sync: created: 9, unchanged: 2
+```
+
+The components in `src/pages/cv.astro` (scaffolded by `init`) now render the synced data.
+
+## How to get the ZIP
+
+linkedin.com → **Settings & Privacy** → **Data Privacy** → "Get a copy of your data" → check Profile / Connections / Articles / Shares / Skills → wait 10–30 min for the email → save the ZIP into `./exports/`.
+
+Optional PDF supplement (used only to fill blanks the ZIP truncates):
+linkedin.com/in/your-handle → **More** → **Save to PDF** → pass via `pdfPath`.
 
 ## What gets synced
-
-From your LinkedIn **Data Export ZIP** (Settings → Data Privacy → Get a copy of your data):
 
 | LinkedIn file                | Astro destination                       |
 | ---------------------------- | --------------------------------------- |
@@ -20,69 +60,92 @@ From your LinkedIn **Data Export ZIP** (Settings → Data Privacy → Get a copy
 | `Publications.csv`           | `src/content/linkedin/publications.json` |
 | `Honors.csv`                 | `src/content/linkedin/honors.json`      |
 | `Volunteering.csv`           | `src/content/linkedin/volunteer.json`   |
-| `Shares.csv`                 | `src/content/linkedin/posts/*.md` (one file per share) |
-| `Articles/*.html`            | `src/content/linkedin/articles/*.md` (one file per article) |
+| `Shares.csv`                 | `src/content/posts/*.md`                |
+| `Articles/*.html`            | `src/content/articles/*.md`             |
 
-The optional `--pdf` flag accepts the "Save to PDF" profile dump and is used **only to fill blanks** the ZIP export leaves (e.g. truncated `summary`).
+## Components
 
-## Install
-
-```bash
-npm install astro-linkedin-sync
-```
-
-## Quick start
-
-```bash
-# 1. Scaffold the content collection config in your Astro project
-npx astro-linkedin-sync init
-
-# 2. Download your LinkedIn data export ZIP from
-#    Settings & Privacy → Data Privacy → Get a copy of your data
-#    (Wait the 10-20 min until LinkedIn emails the download link)
-
-# 3. Sync
-npx astro-linkedin-sync sync ./Basic_LinkedInDataExport.zip
-
-# 4. Use in your Astro pages
-```
+All components live under `astro-linkedin-sync/components/*.astro`. Each auto-fetches its data from the default collection but can also receive data via prop.
 
 ```astro
 ---
-// src/pages/about.astro
-import { getEntry, getCollection } from "astro:content";
-
-const profile = await getEntry("linkedin", "profile");
-const positions = await getEntry("linkedin", "positions");
-const posts = await getCollection("posts");
+import Profile from "astro-linkedin-sync/components/Profile.astro";
+import Experience from "astro-linkedin-sync/components/Experience.astro";
+import Education from "astro-linkedin-sync/components/Education.astro";
+import Skills from "astro-linkedin-sync/components/Skills.astro";
+import Certifications from "astro-linkedin-sync/components/Certifications.astro";
+import Posts from "astro-linkedin-sync/components/Posts.astro";
+import Articles from "astro-linkedin-sync/components/Articles.astro";
 ---
 
-<h1>{profile.data.firstName} {profile.data.lastName}</h1>
-<p>{profile.data.headline}</p>
-<p>{profile.data.summary}</p>
+<Profile />
+<Experience />
+<Education />
+<Skills limit={20} />
+<Certifications />
+<Posts limit={5} />
+<Articles limit={3} hrefPrefix="/blog/" />
+```
 
-<h2>Experience</h2>
-{positions.data.items.map((p) => (
-  <article>
-    <h3>{p.title} — {p.company}</h3>
-    <time>{p.dates.start} → {p.dates.current ? "now" : p.dates.end}</time>
-    <p>{p.description}</p>
-  </article>
-))}
+### Customizing
+
+**Slot overrides** — every section has a named slot for full markup control:
+
+```astro
+<Profile>
+  <header slot="header">
+    <h1>{firstName} – Senior Engineer</h1>
+  </header>
+</Profile>
+
+<Experience>
+  <Fragment slot="position" let:position>
+    <article class="my-card">
+      <strong>{position.title}</strong> at {position.company}
+    </article>
+  </Fragment>
+</Experience>
+```
+
+**Pass data explicitly** — bypass auto-fetch when you want full control:
+
+```astro
+---
+import { getEntry } from "astro:content";
+import Profile from "astro-linkedin-sync/components/Profile.astro";
+const profile = (await getEntry("linkedin", "profile"))!.data;
+---
+<Profile data={profile} />
+```
+
+**Styling** — components emit semantic class names (`als-profile`, `als-experience__title`, `als-skills__tag`, etc.) with zero opinionated CSS. Style them with Tailwind, your own CSS, or whatever you use.
+
+## Integration options
+
+```js
+linkedinSync({
+  zipPath: "./Basic_LinkedInDataExport.zip",  // explicit path (overrides exportsDir)
+  exportsDir: "./exports",                    // scanned for newest .zip
+  pdfPath: "./Profile.pdf",                   // optional, fills blanks
+  outDir: "src/content/linkedin",
+  force: false,         // overwrite manual edits + locked files
+  verbose: false,       // log every file action
+  silentIfMissing: true // don't warn on production builds when ZIP is gitignored
+})
 ```
 
 ## Re-syncing — won't trample your edits
 
-Each output file carries a `_sync` block (JSON) or sync frontmatter (Markdown) with:
+Each output file carries a `_sync` block (JSON) or sync frontmatter (Markdown):
 
 ```yaml
 source: linkedin
-syncedAt: 2025-06-11T19:30:00.000Z
+syncedAt: 2026-06-11T19:30:00.000Z
 hash: 712b7e60f6a50144
 locked: false
 ```
 
-When you run `sync` again, each file lands in one of five states:
+Each re-sync run lands every file in one of five states:
 
 | State                     | When                                            | Action |
 | ------------------------- | ----------------------------------------------- | ------ |
@@ -94,93 +157,44 @@ When you run `sync` again, each file lands in one of five states:
 
 So the workflow is:
 
-1. **Edit on LinkedIn** → run `sync` → site updates.
-2. **Want to tweak a synced post or rewrite a summary?** Set `locked: true` in the file. It will never be overwritten again, even on `--force`.
-3. **Got a "skipped (manual edit)" warning?** Either delete the file (re-sync recreates it from LinkedIn) or commit your edits + set `locked: true`.
+1. **Edit on LinkedIn** → next `astro dev` / `astro build` syncs it.
+2. **Want to tweak a synced post or rewrite your summary?** Set `locked: true` in the file. It will never be overwritten, even on `--force`.
+3. **Got a "skipped (manual edit)" warning?** Either delete the file (re-sync recreates from LinkedIn) or commit your edits + flip `locked: true`.
 
 ## CLI reference
 
 ```
 astro-linkedin-sync init [--out src/content/linkedin]
-    Scaffold the Astro content config and output directory.
+    Scaffold content config, example page, and exports directory.
 
 astro-linkedin-sync sync <export.zip> [--pdf profile.pdf] [--out DIR] [--dry-run] [--force]
-    Parse the export and write/update content files.
-    --dry-run  show what would change without writing
-    --force    overwrite even locked and manually-edited files
+    Parse and write/update content files manually.
 
 astro-linkedin-sync status [--out DIR]
     List every synced file with its lock state and last sync timestamp.
 ```
+
+The integration is preferred for local dev; the CLI is preferred for CI.
 
 ## Programmatic API
 
 ```ts
 import { sync, parseLinkedInExport } from "astro-linkedin-sync";
 
-// One-shot: parse + write
 const report = await sync({
   zipPath: "./export.zip",
-  pdfPath: "./profile.pdf",  // optional
   outDir: "src/content/linkedin",
-  dryRun: false,
-  force: false,
 });
 
-console.log(report.actions);
-// [
-//   { type: "updated", path: ".../profile.json" },
-//   { type: "unchanged", path: ".../positions.json" },
-//   ...
-// ]
-
-// Or just parse, do something else with the data
+// Just parse, do something else with the data:
 const parsed = await parseLinkedInExport({ zipPath: "./export.zip" });
-console.log(parsed.profile, parsed.positions, parsed.shares);
 ```
-
-## Zod schemas
-
-Importable for use in your `src/content/config.ts`:
-
-```ts
-import {
-  profileSchema,
-  positionsFileSchema,
-  educationFileSchema,
-  skillsFileSchema,
-  certificationsFileSchema,
-  projectsFileSchema,
-  languagesFileSchema,
-  publicationsFileSchema,
-  honorsFileSchema,
-  volunteerFileSchema,
-  postFrontmatterSchema,
-  articleFrontmatterSchema,
-} from "astro-linkedin-sync/schemas";
-```
-
-`init` writes a starter `src/content/config.ts` that wires them all up.
-
-## How to get your LinkedIn data
-
-**Data export ZIP (recommended)**
-
-1. linkedin.com → Settings & Privacy → Data Privacy → "Get a copy of your data"
-2. Pick "Want something in particular?" → check "Profile", "Connections", "Articles", "Shares", "Skills"
-3. Wait 10–30 minutes for the email with the download link
-4. Save the ZIP somewhere outside your repo (it's personal data — `.gitignore` already excludes `*.zip`)
-
-**PDF profile (optional supplement)**
-
-1. linkedin.com/in/your-handle → "More" → "Save to PDF"
-2. Pass with `--pdf path/to/Profile.pdf`
 
 ## What's NOT supported
 
-- **Astro → LinkedIn (publishing)** — would need LinkedIn API approval that's gatekept to Marketing Developer Platform partners.
-- **Real-time sync** — there's no public webhook from LinkedIn. Re-run `sync` after you update your profile, or wire it into a cron job / GitHub Action.
-- **Scraping** — keeping this safe and within ToS; if you need it, plug `parseLinkedInExport`-shaped data from a paid API (proxycurl, etc.) and use `writeParsedExport` directly.
+- **Astro → LinkedIn (publishing)** — LinkedIn API gates this behind Marketing Developer Platform partner approval.
+- **Company Pages** — the data export is personal-only.
+- **Real-time sync** — no public webhook from LinkedIn. Re-download the ZIP periodically (the integration picks up the newest automatically).
 
 ## License
 

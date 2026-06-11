@@ -1,0 +1,82 @@
+---
+import { getCollection } from "astro:content";
+
+/**
+ * Renders a card list of LinkedIn long-form articles. Auto-fetches the
+ * entire "articles" collection. Use Astro routing (e.g. `[slug].astro`)
+ * to render full article bodies — this component only lists.
+ */
+export interface Props {
+  collection?: string;
+  limit?: number;
+  /** Optional route prefix for "Read more" links. */
+  hrefPrefix?: string;
+  class?: string;
+}
+
+const {
+  collection = "articles",
+  limit,
+  hrefPrefix = "/articles/",
+  class: className,
+} = Astro.props;
+
+type ArticleEntry = {
+  id: string;
+  slug: string;
+  data: {
+    slug: string;
+    title: string;
+    date: Date | null;
+  };
+  body: string;
+};
+
+const all = (await getCollection(collection as never)) as ArticleEntry[];
+const articles = all
+  .slice()
+  .sort((a, b) => {
+    const da = a.data.date ? +new Date(a.data.date) : 0;
+    const db = b.data.date ? +new Date(b.data.date) : 0;
+    return db - da;
+  });
+const visible = limit && limit > 0 ? articles.slice(0, limit) : articles;
+
+function excerpt(body: string, len = 220): string {
+  const stripped = body.replace(/^#+\s.*$/gm, "").replace(/\s+/g, " ").trim();
+  return stripped.length > len ? stripped.slice(0, len).trimEnd() + "…" : stripped;
+}
+---
+
+<section class:list={["als-articles", className]}>
+  <slot name="heading">
+    <h2 class="als-articles__heading">Articles</h2>
+  </slot>
+
+  <ul class="als-articles__list">
+    {
+      visible.map((article) => (
+        <li class="als-articles__item">
+          <slot name="article" article={article}>
+            <article class="als-articles__card">
+              <h3 class="als-articles__title">
+                <a href={`${hrefPrefix}${article.data.slug}`}>
+                  {article.data.title}
+                </a>
+              </h3>
+              {article.data.date && (
+                <time
+                  class="als-articles__date"
+                  datetime={new Date(article.data.date).toISOString()}
+                >
+                  {new Date(article.data.date).toISOString().slice(0, 10)}
+                </time>
+              )}
+              <p class="als-articles__excerpt">{excerpt(article.body)}</p>
+            </article>
+          </slot>
+        </li>
+      ))
+    }
+  </ul>
+</section>

@@ -1,0 +1,92 @@
+---
+import { getEntry } from "astro:content";
+import type { Position } from "../types.js";
+
+/**
+ * Renders work experience as a timeline. Auto-fetches from
+ * `linkedin/positions` by default.
+ *
+ * @example
+ *   <Experience />
+ *
+ * @example Per-position slot
+ *   <Experience>
+ *     <Fragment slot="position" let:position>
+ *       ...custom markup...
+ *     </Fragment>
+ *   </Experience>
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  positions?: Position[];
+  /** Date range label between start and end. @default "→" */
+  separator?: string;
+  /** Label used when end is null + current=true. @default "Present" */
+  presentLabel?: string;
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "positions",
+  positions: provided,
+  separator = "→",
+  presentLabel = "Present",
+  class: className,
+} = Astro.props;
+
+let positions: Position[];
+if (provided) {
+  positions = provided;
+} else {
+  const e = await getEntry(collection as never, entry);
+  positions = e ? ((e as { data: { items: Position[] } }).data.items ?? []) : [];
+}
+
+function formatRange(p: Position): string {
+  const start = p.dates.start ?? "";
+  const end = p.dates.current ? presentLabel : (p.dates.end ?? "");
+  if (!start && !end) return "";
+  return `${start} ${separator} ${end}`.trim();
+}
+---
+
+<section class:list={["als-experience", className]}>
+  <slot name="heading">
+    <h2 class="als-experience__heading">Experience</h2>
+  </slot>
+
+  <ol class="als-experience__list">
+    {
+      positions.map((position) => (
+        <li class="als-experience__item">
+          <slot name="position" position={position}>
+            <header class="als-experience__item-head">
+              <h3 class="als-experience__title">{position.title}</h3>
+              {position.company && (
+                <p class="als-experience__company">{position.company}</p>
+              )}
+              <p class="als-experience__dates">
+                <time>{formatRange(position)}</time>
+                {position.location && (
+                  <span class="als-experience__location">
+                    {" · "}
+                    {position.location}
+                  </span>
+                )}
+              </p>
+            </header>
+            {position.description && (
+              <div class="als-experience__description">
+                {position.description.split(/\n{2,}/).map((p) => (
+                  <p>{p}</p>
+                ))}
+              </div>
+            )}
+          </slot>
+        </li>
+      ))
+    }
+  </ol>
+</section>

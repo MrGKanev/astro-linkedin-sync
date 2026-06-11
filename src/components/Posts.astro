@@ -1,0 +1,77 @@
+---
+import { getCollection } from "astro:content";
+
+/**
+ * Renders LinkedIn shares (posts) as a list, newest first. Auto-fetches
+ * the entire "posts" collection.
+ *
+ * @example Limit to most recent 5
+ *   <Posts limit={5} />
+ *
+ * @example Custom per-post layout
+ *   <Posts>
+ *     <Fragment slot="post" let:post>
+ *       ...
+ *     </Fragment>
+ *   </Posts>
+ */
+export interface Props {
+  collection?: string;
+  limit?: number;
+  class?: string;
+}
+
+const { collection = "posts", limit, class: className } = Astro.props;
+
+type PostEntry = {
+  id: string;
+  data: {
+    id: string;
+    date: Date;
+    link?: string;
+    visibility?: string;
+    locked?: boolean;
+  };
+  body: string;
+};
+
+const all = (await getCollection(collection as never)) as PostEntry[];
+const posts = all
+  .slice()
+  .sort((a, b) => +new Date(b.data.date) - +new Date(a.data.date));
+const visible = limit && limit > 0 ? posts.slice(0, limit) : posts;
+---
+
+<section class:list={["als-posts", className]}>
+  <slot name="heading">
+    <h2 class="als-posts__heading">Latest posts</h2>
+  </slot>
+
+  <ol class="als-posts__list">
+    {
+      visible.map((post) => (
+        <li class="als-posts__item">
+          <slot name="post" post={post}>
+            <article class="als-posts__article">
+              <time class="als-posts__date" datetime={new Date(post.data.date).toISOString()}>
+                {new Date(post.data.date).toISOString().slice(0, 10)}
+              </time>
+              <div class="als-posts__body">
+                {post.body.split(/\n{2,}/).map((p) => (
+                  <p>{p}</p>
+                ))}
+              </div>
+              {post.data.link && (
+                <p class="als-posts__link">
+                  <a href={post.data.link} target="_blank" rel="noopener">
+                    View on LinkedIn
+                  </a>
+                </p>
+              )}
+            </article>
+          </slot>
+        </li>
+      ))
+    }
+  </ol>
+</section>

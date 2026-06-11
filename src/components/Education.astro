@@ -1,0 +1,69 @@
+---
+import { getEntry } from "astro:content";
+import type { EducationEntry } from "../types.js";
+
+/**
+ * Renders education entries as a list. Auto-fetches from
+ * `linkedin/education` by default.
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  education?: EducationEntry[];
+  separator?: string;
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "education",
+  education: provided,
+  separator = "→",
+  class: className,
+} = Astro.props;
+
+let education: EducationEntry[];
+if (provided) {
+  education = provided;
+} else {
+  const e = await getEntry(collection as never, entry);
+  education = e
+    ? ((e as { data: { items: EducationEntry[] } }).data.items ?? [])
+    : [];
+}
+
+function formatRange(e: EducationEntry): string {
+  const s = e.dates.start ?? "";
+  const en = e.dates.end ?? "";
+  if (!s && !en) return "";
+  return `${s} ${separator} ${en}`.trim();
+}
+---
+
+<section class:list={["als-education", className]}>
+  <slot name="heading">
+    <h2 class="als-education__heading">Education</h2>
+  </slot>
+
+  <ol class="als-education__list">
+    {
+      education.map((item) => (
+        <li class="als-education__item">
+          <h3 class="als-education__school">{item.school}</h3>
+          {(item.degree || item.fieldOfStudy) && (
+            <p class="als-education__degree">
+              {[item.degree, item.fieldOfStudy].filter(Boolean).join(", ")}
+            </p>
+          )}
+          <p class="als-education__dates">
+            <time>{formatRange(item)}</time>
+          </p>
+          {item.activities && (
+            <p class="als-education__activities">{item.activities}</p>
+          )}
+          {item.notes && <p class="als-education__notes">{item.notes}</p>}
+        </li>
+      ))
+    }
+  </ol>
+</section>

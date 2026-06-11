@@ -38,30 +38,31 @@ function help(): void {
     `astro-linkedin-sync — sync your LinkedIn data export into Astro content
 
 Usage:
-  astro-linkedin-sync init [--out src/content/linkedin]
-      Drop a starter Astro content config + .gitignore hints into your project.
+  astro-linkedin-sync init [--out src/content]
+      Scaffold the Astro content config, exports/, and an example page.
 
   astro-linkedin-sync sync <export.zip> [--pdf profile.pdf] [--out DIR] [--dry-run] [--force]
-      Parse the export and write/update content files. Manual edits and
-      files with \`locked: true\` are preserved.
+      Parse the export and write/update content files. --out is the
+      content root; sync creates linkedin/, posts/, articles/ underneath.
 
   astro-linkedin-sync status [--out DIR]
       List every synced file with its lock state and the last sync time.
 
 Examples:
   astro-linkedin-sync sync ./Basic_LinkedInDataExport.zip
-  astro-linkedin-sync sync ./export.zip --pdf ./Profile.pdf --out src/content/linkedin
+  astro-linkedin-sync sync ./export.zip --pdf ./Profile.pdf --out src/content
   astro-linkedin-sync sync ./export.zip --dry-run
 `,
   );
 }
 
 async function runInit(flags: Record<string, string | boolean>): Promise<void> {
-  const outDir = String(flags.out ?? "src/content/linkedin");
-  const fullOut = resolve(process.cwd(), outDir);
-  await mkdir(fullOut, { recursive: true });
-  await mkdir(resolve(process.cwd(), "src/content/posts"), { recursive: true });
-  await mkdir(resolve(process.cwd(), "src/content/articles"), { recursive: true });
+  const contentDir = String(flags.out ?? "src/content");
+  const fullContent = resolve(process.cwd(), contentDir);
+  await mkdir(join(fullContent, "linkedin"), { recursive: true });
+  await mkdir(join(fullContent, "posts"), { recursive: true });
+  await mkdir(join(fullContent, "articles"), { recursive: true });
+  await mkdir(resolve(process.cwd(), "exports"), { recursive: true });
 
   const configPath = resolve(process.cwd(), "src/content/config.ts");
   if (!existsSync(configPath)) {
@@ -108,7 +109,58 @@ export const collections = { linkedin, posts, articles };
   } else {
     console.log(`skipped ${configPath} (already exists)`);
   }
-  console.log(`output directory ready: ${fullOut}`);
+
+  const examplePagePath = resolve(process.cwd(), "src/pages/cv.astro");
+  if (!existsSync(examplePagePath)) {
+    await mkdir(resolve(process.cwd(), "src/pages"), { recursive: true });
+    await writeFile(
+      examplePagePath,
+      `---
+import Profile from "astro-linkedin-sync/components/Profile.astro";
+import Experience from "astro-linkedin-sync/components/Experience.astro";
+import Education from "astro-linkedin-sync/components/Education.astro";
+import Skills from "astro-linkedin-sync/components/Skills.astro";
+import Certifications from "astro-linkedin-sync/components/Certifications.astro";
+import Posts from "astro-linkedin-sync/components/Posts.astro";
+import Articles from "astro-linkedin-sync/components/Articles.astro";
+---
+<html>
+  <body>
+    <main>
+      <Profile />
+      <Experience />
+      <Education />
+      <Skills />
+      <Certifications />
+      <Posts limit={5} />
+      <Articles limit={3} />
+    </main>
+  </body>
+</html>
+`,
+      "utf8",
+    );
+    console.log(`created ${examplePagePath}`);
+  } else {
+    console.log(`skipped ${examplePagePath} (already exists)`);
+  }
+
+  console.log(`
+Next steps:
+  1. Add the integration to astro.config.mjs:
+
+       import linkedinSync from "astro-linkedin-sync/integration";
+
+       export default defineConfig({
+         integrations: [linkedinSync()],
+       });
+
+  2. Drop your LinkedIn data-export ZIP into ./exports/
+  3. Run \`astro dev\` — the integration will sync automatically.
+
+Output directory: ${fullOut}
+Exports directory: ${resolve(process.cwd(), "exports")}
+`);
 }
 
 async function runSync(args: Args): Promise<void> {
