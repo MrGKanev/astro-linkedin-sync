@@ -158,7 +158,7 @@ Next steps:
   2. Drop your LinkedIn data-export ZIP into ./exports/
   3. Run \`astro dev\` — the integration will sync automatically.
 
-Output directory: ${fullOut}
+Content directory: ${fullContent}
 Exports directory: ${resolve(process.cwd(), "exports")}
 `);
 }
@@ -169,7 +169,7 @@ async function runSync(args: Args): Promise<void> {
     console.error("error: missing <export.zip> argument");
     process.exit(1);
   }
-  const outDir = String(args.flags.out ?? "src/content/linkedin");
+  const outDir = String(args.flags.out ?? "src/content");
   const pdfPath = args.flags.pdf ? String(args.flags.pdf) : undefined;
   const dryRun = args.flags["dry-run"] === true;
   const force = args.flags.force === true;
@@ -219,7 +219,7 @@ function printReport(actions: SyncAction[]): void {
 }
 
 async function runStatus(flags: Record<string, string | boolean>): Promise<void> {
-  const outDir = resolve(String(flags.out ?? "src/content/linkedin"));
+  const outDir = resolve(String(flags.out ?? "src/content"));
   if (!existsSync(outDir)) {
     console.log(`no synced content found at ${outDir}`);
     return;

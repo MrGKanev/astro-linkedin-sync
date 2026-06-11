@@ -25,7 +25,6 @@ type ArticleEntry = {
   id: string;
   slug: string;
   data: {
-    slug: string;
     title: string;
     date: Date | null;
   };
@@ -60,7 +59,7 @@ function excerpt(body: string, len = 220): string {
           <slot name="article" article={article}>
             <article class="als-articles__card">
               <h3 class="als-articles__title">
-                <a href={`${hrefPrefix}${article.data.slug}`}>
+                <a href={`${hrefPrefix}${article.slug}`}>
                   {article.data.title}
                 </a>
               </h3>

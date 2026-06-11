@@ -9,28 +9,30 @@ import type {
   SyncReport,
 } from "./types.js";
 
+export interface WriteTargets {
+  /** Where the structured JSON files (profile, positions, etc.) land. */
+  linkedinDir: string;
+  /** Where post Markdown files land — one per LinkedIn share. */
+  postsDir: string;
+  /** Where article Markdown files land — one per long-form article. */
+  articlesDir: string;
+}
+
 /**
- * Take a parsed LinkedIn export and write each section to disk under
- * `outDir`. Returns a report of what happened to every file.
+ * Take a parsed LinkedIn export and write each section to disk under the
+ * given targets. Returns a report of what happened to every file.
  *
- * Layout produced:
+ * Layout (with defaults):
  *
- *   <outDir>/profile.json
- *   <outDir>/positions.json
- *   <outDir>/education.json
- *   <outDir>/skills.json
- *   <outDir>/certifications.json
- *   <outDir>/projects.json
- *   <outDir>/languages.json
- *   <outDir>/publications.json
- *   <outDir>/honors.json
- *   <outDir>/volunteer.json
- *   <outDir>/posts/<id>.md      one file per LinkedIn share
- *   <outDir>/articles/<slug>.md one file per long-form article
+ *   src/content/linkedin/profile.json
+ *   src/content/linkedin/positions.json
+ *   src/content/linkedin/education.json   (and other structured sections)
+ *   src/content/posts/<id>.md
+ *   src/content/articles/<slug>.md
  */
 export async function writeParsedExport(
   parsed: ParsedExport,
-  outDir: string,
+  targets: WriteTargets,
   opts: { dryRun?: boolean; force?: boolean } = {},
 ): Promise<SyncReport> {
   const actions: SyncAction[] = [];
@@ -41,7 +43,7 @@ export async function writeParsedExport(
   if (parsed.profile) {
     actions.push(
       await writeStructuredJson(
-        join(outDir, "profile.json"),
+        join(targets.linkedinDir, "profile.json"),
         parsed.profile,
         opts,
       ),
@@ -65,7 +67,7 @@ export async function writeParsedExport(
     if (items.length === 0) continue;
     actions.push(
       await writeStructuredJson(
-        join(outDir, filename),
+        join(targets.linkedinDir, filename),
         list(items),
         opts,
       ),
@@ -73,7 +75,7 @@ export async function writeParsedExport(
   }
 
   for (const share of parsed.shares) {
-    const file = join(outDir, "posts", `${share.id}.md`);
+    const file = join(targets.postsDir, `${share.id}.md`);
     actions.push(
       await writeMarkdown(
         file,
@@ -92,13 +94,14 @@ export async function writeParsedExport(
   }
 
   for (const article of parsed.articles) {
-    const file = join(outDir, "articles", `${article.slug}.md`);
+    // `slug` is reserved by Astro's content collections — it's auto-derived
+    // from the filename and stripped from frontmatter. Don't emit it.
+    const file = join(targets.articlesDir, `${article.slug}.md`);
     actions.push(
       await writeMarkdown(
         file,
         {
           frontmatter: {
-            slug: article.slug,
             title: article.title,
             date: article.publishedOn,
           },
@@ -112,13 +115,25 @@ export async function writeParsedExport(
   return { actions, warnings };
 }
 
-/** End-to-end: parse export → write to outDir. */
+/**
+ * Resolve `SyncOptions` to a concrete set of write targets, applying
+ * conventional defaults derived from `outDir`.
+ */
+export function resolveTargets(opts: SyncOptions): WriteTargets {
+  return {
+    linkedinDir: opts.linkedinDir ?? join(opts.outDir, "linkedin"),
+    postsDir: opts.postsDir ?? join(opts.outDir, "posts"),
+    articlesDir: opts.articlesDir ?? join(opts.outDir, "articles"),
+  };
+}
+
+/** End-to-end: parse export → write to disk. */
 export async function sync(opts: SyncOptions): Promise<SyncReport> {
   const parsed = await parseLinkedInExport({
     zipPath: opts.zipPath,
     pdfPath: opts.pdfPath,
   });
-  return writeParsedExport(parsed, opts.outDir, {
+  return writeParsedExport(parsed, resolveTargets(opts), {
     dryRun: opts.dryRun,
     force: opts.force,
   });

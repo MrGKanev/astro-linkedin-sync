@@ -1,5 +1,15 @@
 import { z } from "zod";
 
+/**
+ * YAML frontmatter auto-coerces ISO-8601 strings into `Date` objects.
+ * For fields that should remain string-shaped after parsing, we accept
+ * either form and normalize.
+ */
+const isoString = z.preprocess(
+  (v) => (v instanceof Date ? v.toISOString() : v),
+  z.string(),
+);
+
 const dateRange = z.object({
   start: z.string().nullable(),
   end: z.string().nullable(),
@@ -8,7 +18,7 @@ const dateRange = z.object({
 
 const syncMeta = z.object({
   source: z.literal("linkedin").default("linkedin"),
-  syncedAt: z.string(),
+  syncedAt: isoString,
   hash: z.string(),
   locked: z.boolean().default(false),
 });
@@ -120,17 +130,16 @@ export const postFrontmatterSchema = z.object({
   link: z.string().optional(),
   visibility: z.string().optional(),
   source: z.literal("linkedin").default("linkedin"),
-  syncedAt: z.string(),
+  syncedAt: isoString,
   hash: z.string(),
   locked: z.boolean().default(false),
 });
 
 export const articleFrontmatterSchema = z.object({
-  slug: z.string(),
   title: z.string(),
   date: z.coerce.date().nullable(),
   source: z.literal("linkedin").default("linkedin"),
-  syncedAt: z.string(),
+  syncedAt: isoString,
   hash: z.string(),
   locked: z.boolean().default(false),
 });

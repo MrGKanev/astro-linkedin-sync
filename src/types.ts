@@ -122,7 +122,22 @@ export interface ParsedExport {
 }
 
 export interface SyncOptions {
+  /**
+   * Content root. Defaults to "src/content".
+   *
+   * Sync writes to three sibling directories under this root, matching
+   * Astro's content-collection layout conventions:
+   *   - `${outDir}/linkedin/*.json` — profile + structured sections
+   *   - `${outDir}/posts/*.md`      — one file per LinkedIn share
+   *   - `${outDir}/articles/*.md`   — one file per long-form article
+   *
+   * Override individual subdirectories with `linkedinDir`, `postsDir`,
+   * `articlesDir` if you don't want the conventional layout.
+   */
   outDir: string;
+  linkedinDir?: string;
+  postsDir?: string;
+  articlesDir?: string;
   zipPath?: string;
   pdfPath?: string;
   dryRun?: boolean;
