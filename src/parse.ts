@@ -11,6 +11,7 @@ import {
   normalizeProfile,
   normalizeProjects,
   normalizePublications,
+  normalizeRecommendations,
   normalizeShares,
   normalizeSkills,
   normalizeVolunteer,
@@ -62,5 +63,8 @@ export async function parseLinkedInExport(opts: {
     ),
     shares: normalizeShares(csvRows(findEntry(entries, "shares.csv"))),
     articles: normalizeArticles(articleEntries),
+    recommendations: normalizeRecommendations(
+      pdf?.sections["recommendations"] ?? "",
+    ),
   };
 }

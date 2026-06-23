@@ -123,6 +123,15 @@ export const publicationsFileSchema = listFile(publicationSchema);
 export const honorsFileSchema = listFile(honorSchema);
 export const volunteerFileSchema = listFile(volunteerSchema);
 
+export const recommendationSchema = z.object({
+  recommenderName: z.string(),
+  recommenderTitle: z.string(),
+  text: z.string(),
+  type: z.enum(["received", "given"]),
+});
+
+export const recommendationsFileSchema = listFile(recommendationSchema);
+
 export const postFrontmatterSchema = z.object({
   id: z.string(),
   title: z.string().optional(),

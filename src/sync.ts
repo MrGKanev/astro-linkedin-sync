@@ -62,6 +62,7 @@ export async function writeParsedExport(
     ["publications.json", parsed.publications],
     ["honors.json", parsed.honors],
     ["volunteer.json", parsed.volunteer],
+    ["recommendations.json", parsed.recommendations],
   ];
   for (const [filename, items] of sections) {
     if (items.length === 0) continue;

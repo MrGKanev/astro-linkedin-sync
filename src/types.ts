@@ -106,6 +106,13 @@ export interface Article {
   contentMarkdown: string;
 }
 
+export interface Recommendation {
+  recommenderName: string;
+  recommenderTitle: string;
+  text: string;
+  type: "received" | "given";
+}
+
 export interface ParsedExport {
   profile: Profile | null;
   positions: Position[];
@@ -119,6 +126,7 @@ export interface ParsedExport {
   volunteer: Volunteer[];
   shares: Share[];
   articles: Article[];
+  recommendations: Recommendation[];
 }
 
 export interface SyncOptions {

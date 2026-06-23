@@ -14,6 +14,7 @@ export type {
   Volunteer,
   Share,
   Article,
+  Recommendation,
   SyncOptions,
   SyncReport,
   SyncAction,

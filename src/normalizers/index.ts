@@ -10,3 +10,4 @@ export * from "./honors.js";
 export * from "./volunteer.js";
 export * from "./shares.js";
 export * from "./articles.js";
+export * from "./recommendations.js";

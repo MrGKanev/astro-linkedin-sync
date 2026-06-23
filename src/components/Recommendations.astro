@@ -1,0 +1,90 @@
+---
+import { getEntry } from "astro:content";
+import type { Recommendation } from "../types.js";
+
+/**
+ * Renders LinkedIn recommendations. Auto-fetches from `linkedin/recommendations`.
+ * Optionally filter by type: "received" | "given" | "all" (default: "all").
+ */
+export interface Props {
+  collection?: string;
+  entry?: string;
+  recommendations?: Recommendation[];
+  filter?: "received" | "given" | "all";
+  class?: string;
+}
+
+const {
+  collection = "linkedin",
+  entry = "recommendations",
+  recommendations: provided,
+  filter = "all",
+  class: className,
+} = Astro.props;
+
+let all: Recommendation[];
+if (provided) {
+  all = provided;
+} else {
+  const e = await getEntry(collection as never, entry);
+  all = e
+    ? ((e as { data: { items: Recommendation[] } }).data.items ?? [])
+    : [];
+}
+
+const recommendations = filter === "all" ? all : all.filter((r) => r.type === filter);
+const received = recommendations.filter((r) => r.type === "received");
+const given = recommendations.filter((r) => r.type === "given");
+---
+
+<section class:list={["als-recommendations", className]}>
+  <slot name="heading">
+    <h2 class="als-recommendations__heading">Recommendations</h2>
+  </slot>
+
+  {received.length > 0 && (
+    <div class="als-recommendations__group">
+      <slot name="received-heading">
+        <h3 class="als-recommendations__subheading">Received</h3>
+      </slot>
+      <ul class="als-recommendations__list">
+        {received.map((r) => (
+          <li class="als-recommendations__item">
+            <blockquote class="als-recommendations__quote">
+              <p class="als-recommendations__text">{r.text}</p>
+              <footer class="als-recommendations__footer">
+                <span class="als-recommendations__name">{r.recommenderName}</span>
+                {r.recommenderTitle && (
+                  <span class="als-recommendations__title">{r.recommenderTitle}</span>
+                )}
+              </footer>
+            </blockquote>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  {given.length > 0 && (
+    <div class="als-recommendations__group">
+      <slot name="given-heading">
+        <h3 class="als-recommendations__subheading">Given</h3>
+      </slot>
+      <ul class="als-recommendations__list">
+        {given.map((r) => (
+          <li class="als-recommendations__item">
+            <blockquote class="als-recommendations__quote">
+              <p class="als-recommendations__text">{r.text}</p>
+              <footer class="als-recommendations__footer">
+                <span class="als-recommendations__name">{r.recommenderName}</span>
+                {r.recommenderTitle && (
+                  <span class="als-recommendations__title">{r.recommenderTitle}</span>
+                )}
+              </footer>
+            </blockquote>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+</section>

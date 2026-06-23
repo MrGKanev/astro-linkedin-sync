@@ -1,5 +1,10 @@
 # astro-linkedin-sync
 
+[![npm version](https://img.shields.io/npm/v/astro-linkedin-sync)](https://www.npmjs.com/package/astro-linkedin-sync)
+[![npm downloads](https://img.shields.io/npm/dm/astro-linkedin-sync)](https://www.npmjs.com/package/astro-linkedin-sync)
+[![license](https://img.shields.io/npm/l/astro-linkedin-sync)](./LICENSE)
+[![CI](https://github.com/MrGKanev/astro-linkedin-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/MrGKanev/astro-linkedin-sync/actions/workflows/ci.yml)
+
 Sync your LinkedIn profile into Astro and render it with drop-in components. Stop maintaining your CV in two places.
 
 **One-way:** LinkedIn → Astro. LinkedIn stays the source of truth; your Astro site rebuilds from the exported data.
