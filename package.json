@@ -1,7 +1,7 @@
 {
   "name": "astro-linkedin-sync",
   "version": "0.2.5",
-  "description": "Sync your LinkedIn profile (data export ZIP + PDF) into Astro content collections. Ships an Astro integration and drop-in components.",
+  "description": "Sync your LinkedIn profile data export into Astro content collections. Auto-syncing integration, drop-in components, and CLI — keep your portfolio, CV, and resume in sync without duplicating work.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -52,14 +52,22 @@
   },
   "keywords": [
     "astro",
+    "withastro",
     "astro-integration",
     "astro-component",
     "linkedin",
+    "linkedin-profile",
+    "linkedin-export",
     "sync",
+    "data-export",
     "content-collections",
     "portfolio",
+    "developer-portfolio",
     "cv",
-    "resume"
+    "resume",
+    "career",
+    "profile",
+    "markdown"
   ],
   "peerDependencies": {
     "astro": ">=4.0.0"

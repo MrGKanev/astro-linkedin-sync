@@ -116,6 +116,7 @@ export const collections = { linkedin, posts, articles };
     await writeFile(
       examplePagePath,
       `---
+import { getEntry } from "astro:content";
 import Profile from "astro-linkedin-sync/components/Profile.astro";
 import Experience from "astro-linkedin-sync/components/Experience.astro";
 import Education from "astro-linkedin-sync/components/Education.astro";
@@ -123,8 +124,28 @@ import Skills from "astro-linkedin-sync/components/Skills.astro";
 import Certifications from "astro-linkedin-sync/components/Certifications.astro";
 import Posts from "astro-linkedin-sync/components/Posts.astro";
 import Articles from "astro-linkedin-sync/components/Articles.astro";
+
+const profile = (await getEntry("linkedin", "profile"))?.data;
+const fullName = profile ? \`\${profile.firstName} \${profile.lastName}\` : "My CV";
+const headline = profile?.headline ?? "";
+const description = (headline || profile?.summary?.slice(0, 160) ?? "").trim();
+const pageTitle = headline ? \`\${fullName} — \${headline}\` : fullName;
+const canonical = Astro.site ? new URL(Astro.url.pathname, Astro.site).href : undefined;
 ---
-<html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={pageTitle} />
+    {description && <meta property="og:description" content={description} />}
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    {description && <meta name="twitter:description" content={description} />}
+    {canonical && <link rel="canonical" href={canonical} />}
+  </head>
   <body>
     <main>
       <Profile />
