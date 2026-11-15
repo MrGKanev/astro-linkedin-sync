@@ -2,6 +2,7 @@
 // Uses Node's built-in zlib + a hand-rolled minimal ZIP writer to avoid
 // pulling in an archiver dep for tests.
 import { writeFile } from "node:fs/promises";
+import { pathToFileURL } from "node:url";
 import { deflateRawSync } from "node:zlib";
 
 function crc32(buf) {
@@ -20,7 +21,7 @@ function crc32(buf) {
   return (c ^ 0xffffffff) >>> 0;
 }
 
-function makeZip(files) {
+export function makeZip(files) {
   const records = [];
   const central = [];
   let offset = 0;
@@ -128,6 +129,8 @@ const files = [
   },
 ];
 
-const buf = makeZip(files);
-await writeFile(new URL("./fixture.zip", import.meta.url), buf);
-console.log(`wrote test/fixture.zip (${buf.length} bytes, ${files.length} files)`);
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const buf = makeZip(files);
+  await writeFile(new URL("./fixture.zip", import.meta.url), buf);
+  console.log(`wrote test/fixture.zip (${buf.length} bytes, ${files.length} files)`);
+}

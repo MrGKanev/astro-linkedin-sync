@@ -52,11 +52,8 @@ export function parseCsv(input: string): Record<string, string>[] {
       i += 1;
       continue;
     }
-    if (ch === "\r") {
-      i += 1;
-      continue;
-    }
-    if (ch === "\n") {
+    if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i += 1;
       row.push(field);
       rows.push(row);
       field = "";

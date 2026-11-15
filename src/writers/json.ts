@@ -43,12 +43,21 @@ export async function writeStructuredJson(
     const current = await readFile(filePath, "utf8");
     let parsed: { _sync?: { hash?: string; locked?: boolean } } = {};
     try {
-      parsed = JSON.parse(current);
+      const value: unknown = JSON.parse(current);
+      if (!value || typeof value !== "object" || Array.isArray(value)) {
+        if (!opts.force) return { type: "skipped-manual-edit", path: filePath };
+      } else {
+        parsed = value;
+      }
     } catch {
-      // unreadable JSON — treat as manual edit
+      // Unreadable JSON may contain manual work: only overwrite explicitly.
+      if (!opts.force) return { type: "skipped-manual-edit", path: filePath };
     }
     const lastHash = parsed._sync?.hash;
     const locked = parsed._sync?.locked === true;
+    if (!lastHash && !opts.force) {
+      return { type: "skipped-manual-edit", path: filePath };
+    }
 
     if (lastHash === newHash && !opts.force) {
       return { type: "unchanged", path: filePath };
@@ -62,7 +71,11 @@ export async function writeStructuredJson(
     const { _sync: _prev, ...prevWithoutSync } = parsed as Record<string, unknown> & {
       _sync?: unknown;
     };
-    const diskHash = hashContent(prevWithoutSync);
+    const diskHash = hashContent(
+      typeof data === "object" && data !== null && !Array.isArray(data)
+        ? prevWithoutSync
+        : prevWithoutSync.value,
+    );
     const lastHashOfStripped = lastHash;
     if (
       lastHashOfStripped &&

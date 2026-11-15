@@ -58,8 +58,8 @@ export async function parseLinkedInExport(opts: {
     ),
     honors: normalizeHonors(csvRows(findEntry(entries, "honors.csv"))),
     volunteer: normalizeVolunteer(
-      csvRows(findEntry(entries, "volunteering.csv")) ??
-        csvRows(findEntry(entries, "volunteer experience.csv")),
+      csvRows(findEntry(entries, "volunteering.csv") ??
+        findEntry(entries, "volunteer experience.csv")),
     ),
     shares: normalizeShares(csvRows(findEntry(entries, "shares.csv"))),
     articles: normalizeArticles(articleEntries),

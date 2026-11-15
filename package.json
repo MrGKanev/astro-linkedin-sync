@@ -1,7 +1,7 @@
 {
   "name": "astro-linkedin-sync",
-  "version": "0.2.6",
-  "description": "Sync your LinkedIn profile data export into Astro content collections. Auto-syncing integration, drop-in components, and CLI — keep your portfolio, CV, and resume in sync without duplicating work.",
+  "version": "0.2.7",
+  "description": "Sync your LinkedIn profile data export into Astro content collections. Auto-syncing integration, drop-in components, and CLI \u2014 keep your portfolio, CV, and resume in sync without duplicating work.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -45,7 +45,7 @@
   "scripts": {
     "build": "tsc && node scripts/copy-assets.mjs",
     "dev": "tsc --watch",
-    "test": "node --test --experimental-strip-types test/**/*.test.ts",
+    "test": "npm run build && node --test test/*.test.mjs",
     "cli": "node --experimental-strip-types src/cli.ts",
     "prepare": "pnpm run build",
     "prepublishOnly": "pnpm run build && tsc --noEmit && pnpm test"
@@ -82,13 +82,13 @@
     "pdf-parse": "^2.4.5",
     "yaml": "^2.9.1",
     "yauzl": "^3.4.0",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.6",
     "@types/pdf-parse": "^1.1.5",
     "@types/yauzl": "^3.4.0",
-    "astro": "^7.3.4",
+    "astro": "^7.4.12",
     "typescript": "^7.0.2"
   }
 }
